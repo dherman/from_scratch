@@ -12,22 +12,7 @@ I've only gotten so far, so all I can say is the environment I'm working on:
 
 # Building
 
-You can build the subcrates like so:
-
-- `crates/nanners-sys`
-```
-% cargo build --release
-```
-- `crates/nanners`
-```
-% cargo build --release
-```
-
-The root crate is supposed to be built in two steps right now:
-```
-% cargo build --release
-% npm install
-```
+For now, just use `make`. (I'm not convinced this is the best approach.)
 
 # Testing
 

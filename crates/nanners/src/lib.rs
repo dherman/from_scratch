@@ -1,48 +1,29 @@
 extern crate nanners_sys;
 
 use std::mem;
-
-#[link(name = "nanners")]
-extern {
-    fn add17(x: u32) -> u32;
-    fn Nan_FunctionCallbackInfo_GetReturnValue(info: *mut FunctionCallbackInfo) -> ReturnValue;
-    fn Nan_ReturnValue_Set_double(rv: *mut ReturnValue, f: f64);
-}
+use nanners_sys::raw;
+use nanners_sys::{Nan_ReturnValue_Set_double, Nan_FunctionCallbackInfo_GetReturnValue};
 
 #[repr(C)]
-pub struct ReturnValue {
-    #[allow(dead_code)]
-    data: [u8; 16] // FIXME: this was calculated from sizes.cc; automate and autogenerate this
-}
+pub struct ReturnValue(raw::ReturnValue);
 
 impl ReturnValue {
     pub fn set_f64(&mut self, f: f64) {
+        let &mut ReturnValue(ref mut rv) = self;
         unsafe {
-            Nan_ReturnValue_Set_double(mem::transmute(self), f);
+            Nan_ReturnValue_Set_double(mem::transmute(rv), f);
         }
     }
 }
 
 #[repr(C)]
-pub struct FunctionCallbackInfo {
-    #[allow(dead_code)]
-    data: [u8; 40] // FIXME: this was calculated from sizes.cc; automate and autogenerate this
-}
+pub struct FunctionCallbackInfo(raw::FunctionCallbackInfo);
 
 impl FunctionCallbackInfo {
     pub fn get_return_value(&mut self) -> ReturnValue {
+        let &mut FunctionCallbackInfo(ref mut info) = self;
         unsafe {
-            Nan_FunctionCallbackInfo_GetReturnValue(mem::transmute(self))
+            ReturnValue(Nan_FunctionCallbackInfo_GetReturnValue(mem::transmute(info)))
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use ::add17;
-
-    #[test]
-    fn go() {
-        assert!(unsafe { add17(1) } == 18);
     }
 }

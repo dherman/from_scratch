@@ -9,7 +9,7 @@ license = "MIT"
 
 [lib]
 name = "from_scratch"
-crate-type = ["dylib"]
+crate-type = ["staticlib"]
 
 [dependencies]
 nanners-sys = { version = "0.0.1", path = "crates/nanners-sys" }
