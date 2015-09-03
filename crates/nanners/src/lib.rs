@@ -9,23 +9,10 @@ extern {
     fn Nan_ReturnValue_Set_double(rv: *mut ReturnValue, f: f64);
 }
 
-/*
-macro_rules! wrapper_type {
-    ( $name:ident, $size:tt ) => {
-        #[repr(C)]
-        pub struct $name {
-            data: [u8; $size]
-        }
-    }
-}
-
-wrapper_type!(ReturnValue, 16);
-*/
-
 #[repr(C)]
 pub struct ReturnValue {
     #[allow(dead_code)]
-    data: [u8; 16]
+    data: [u8; 16] // FIXME: this was calculated from sizes.cc; automate and autogenerate this
 }
 
 impl ReturnValue {
@@ -39,7 +26,7 @@ impl ReturnValue {
 #[repr(C)]
 pub struct FunctionCallbackInfo {
     #[allow(dead_code)]
-    data: [u8; 40]
+    data: [u8; 40] // FIXME: this was calculated from sizes.cc; automate and autogenerate this
 }
 
 impl FunctionCallbackInfo {
