@@ -1,0 +1,16 @@
+[package]
+name = "from_scratch"
+version = "0.0.1"
+authors = ["Dave Herman <dherman@mozilla.com>"]
+license = "MIT"
+
+# Based on https://github.com/wtfil/rust-in-node
+# Make it a dylib that binding.gyp can reference
+
+[lib]
+name = "from_scratch"
+crate-type = ["dylib"]
+
+[dependencies]
+nanners-sys = { version = "0.0.1", path = "crates/nanners-sys" }
+nanners = { version = "0.0.1", path = "crates/nanners" }

@@ -1,0 +1,7 @@
+[package]
+name = "nanners"
+version = "0.0.1"
+authors = ["Dave Herman <dherman@mozilla.com>"]
+
+[dependencies]
+nanners-sys = { version = "0.0.1", path = "../nanners-sys" }
