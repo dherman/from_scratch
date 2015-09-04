@@ -1,7 +1,7 @@
 staticlib=target/release/libfrom_scratch.a
 dylib=target/release/libfrom_scratch.dylib
 
-build/Release/from_scratch.node: $(dylib)
+build/Release/from_scratch.node: $(dylib) from_scratch.cc
 	npm install
 
 $(dylib): $(staticlib)

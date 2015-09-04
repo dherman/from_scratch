@@ -22,3 +22,8 @@ extern "C" Nan_ReturnValue Nan_FunctionCallbackInfo_GetReturnValue(Nan_FunctionC
 extern "C" void Nan_ReturnValue_Set_double(Nan_ReturnValue *rv, double f) {
   rv->value.Set(f);
 }
+
+extern "C" void Nan_Export(Nan_LocalObject target, const char *name, Nan::FunctionCallback f) {
+  Nan::Export(target.value, name, f);
+}
+

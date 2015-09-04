@@ -1,10 +1,5 @@
 #include <nan.h>
 
-extern "C" double make_a_pi();
-extern "C" void method_make_a_pi(Nan::FunctionCallbackInfo<v8::Value> *info);
+extern "C" void init_module(v8::Local<v8::Object> target);
 
-NAN_MODULE_INIT(init_all) {
-  Nan::Export(target, "make_a_pi", (Nan::FunctionCallback)method_make_a_pi);
-}
-
-NODE_MODULE(noder, init_all)
+NODE_MODULE(from_scratch, init_module)
