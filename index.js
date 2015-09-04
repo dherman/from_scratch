@@ -1,3 +1,3 @@
-var noder = require("bindings")("from_scratch.node");
+var from_scratch = require("bindings")("from_scratch.node");
 
-console.log(noder.make_a_pi());
+console.log(from_scratch.make_a_pi());
