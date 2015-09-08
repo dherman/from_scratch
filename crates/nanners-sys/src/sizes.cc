@@ -14,7 +14,9 @@ int main() {
   printf("  \"Nan_FunctionCallbackInfo\": %lu,\n", sizeof(Nan_FunctionCallbackInfo));
   printf("  \"Nan_ReturnValue\": %lu,\n", sizeof(Nan_ReturnValue));
   printf("  \"Nan_LocalObject\": %lu,\n", sizeof(Nan_LocalObject));
-  printf("  \"Nan_HandleObject\": %lu\n", sizeof(Nan_HandleObject));
+  printf("  \"Nan_MaybeLocalString\": %lu,\n", sizeof(Nan_MaybeLocalString));
+  printf("  \"Nan_HandleScope\": %lu,\n", sizeof(Nan_HandleScope));
+  printf("  \"Nan_EscapableHandleScope\": %lu\n", sizeof(Nan_EscapableHandleScope));
   printf("}\n");
   return 0;
 }

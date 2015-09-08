@@ -4,35 +4,74 @@
 
 extern "C" {
 
-  /*
-  struct Nan_Value {
-    v8::Value value;
-  };
-  */
-
   struct Nan_FunctionCallbackInfo {
     Nan::FunctionCallbackInfo<v8::Value> value;
   };
 
-  struct Nan_ReturnValue {
-    Nan::ReturnValue<v8::Value> value;
+  struct Nan_LocalArray {
+    v8::Local<v8::Array> value;
   };
 
   struct Nan_LocalObject {
     v8::Local<v8::Object> value;
   };
 
-  struct Nan_HandleObject {
-    v8::Handle<v8::Object> value;
+  struct Nan_LocalString {
+    v8::Local<v8::String> value;
   };
 
-  Nan_ReturnValue Nan_FunctionCallbackInfo_GetReturnValue(Nan_FunctionCallbackInfo *info);
+  struct Nan_LocalInteger {
+    v8::Local<v8::Integer> value;
+  };
 
-  void Nan_ReturnValue_Set_double(Nan_ReturnValue *rv, double f);
+  struct Nan_LocalNumber {
+    v8::Local<v8::Number> value;
+  };
 
-  void Nan_Export(Nan_LocalObject target, const char *name, Nan::FunctionCallback f);
+  struct Nan_Local {
+    v8::Local<v8::Value> value;
+  };
 
-  uint32_t add17(uint32_t x);
-  uint32_t stuff(Nan_ReturnValue x);
+  struct Nan_MaybeLocalString {
+    Nan::MaybeLocal<v8::String> value;
+  };
 
+  struct Nan_HandleScope {
+    Nan::HandleScope value;
+  };
+
+  struct Nan_EscapableHandleScope {
+    Nan::EscapableHandleScope value;
+  };
+
+  struct Nan_MaybeBool {
+    Nan::Maybe<bool> value;
+  };
+
+  void Nan_FunctionCallbackInfo_SetReturnValue(Nan_FunctionCallbackInfo *info, Nan_Local value);
+
+  void Nan_Export(Nan_LocalObject *target, const char *name, Nan::FunctionCallback f);
+
+  Nan_LocalObject Nan_NewObject();
+
+  Nan_MaybeLocalString Nan_NewString(const char *value);
+
+  Nan_MaybeLocalString Nan_NewStringN(const char *value, int32_t length);
+
+  Nan_LocalInteger Nan_NewInteger(int32_t x);
+
+  Nan_LocalNumber Nan_NewNumber(double value);
+
+  Nan_LocalArray Nan_NewArray(uint32_t length);
+
+  bool Nan_ArraySet(Nan_LocalArray *array, uint32_t index, Nan_Local value);
+
+  bool Nan_MaybeLocalString_IsEmpty(Nan_MaybeLocalString *maybe);
+  bool Nan_MaybeLocalString_ToLocal(Nan_MaybeLocalString *maybe, Nan_LocalString *out);
+  // bool Nan_MaybeLocalString_ToLocal(Nan_MaybeLocalString *maybe, Nan_LocalString *out);
+
+  void Nan_HandleScope_Drop(Nan_HandleScope *scope);
+  void Nan_HandleScope_PlacementNew(Nan_HandleScope *scope);
+  void Nan_EscapableHandleScope_Drop(Nan_EscapableHandleScope *scope);
+  void Nan_EscapableHandleScope_PlacementNew(Nan_EscapableHandleScope *scope);
 }
