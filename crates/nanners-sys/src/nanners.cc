@@ -4,71 +4,76 @@
 #include <stdio.h>
 #include "nanners.h"
 
-extern "C" void Nan_FunctionCallbackInfo_SetReturnValue(Nan_FunctionCallbackInfo *info, Nan_Local value) {
-  info->value.GetReturnValue().Set(value.value);
+extern "C" void Nan_FunctionCallbackInfo_SetReturnValue(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value) {
+  info->GetReturnValue().Set(value);
 }
 
-extern "C" void Nan_Export(Nan_LocalObject *target, const char *name, Nan::FunctionCallback f) {
-  Nan::Export(target->value, name, f);
+extern "C" void Nan_Export(v8::Local<v8::Object> *target, const char *name, Nan::FunctionCallback f) {
+  Nan::Export(*target, name, f);
 }
 
-extern "C" Nan_LocalObject Nan_NewObject() {
-  struct Nan_LocalObject result = { Nan::New<v8::Object>() };
-  return result;
+extern "C" void Nan_UpcastArray(v8::Local<v8::Value> *out, v8::Local<v8::Array> *array) {
+  *out = v8::Local<v8::Value>::Cast(*array);
 }
 
-extern "C" Nan_MaybeLocalString Nan_NewString(const char *value) {
-  struct Nan_MaybeLocalString result = { Nan::New<v8::String>(value) };
-  return result;
+extern "C" void Nan_NewObject(v8::Local<v8::Object> *out) {
+  *out = Nan::New<v8::Object>();
 }
 
-extern "C" Nan_MaybeLocalString Nan_NewStringN(const char *value, int32_t length) {
-  struct Nan_MaybeLocalString result = { Nan::New<v8::String>(value, length) };
-  return result;
-}
-
-extern "C" Nan_LocalInteger Nan_NewInteger(int32_t x) {
+extern "C" void Nan_NewInteger(v8::Local<v8::Integer> *out, int32_t x) {
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
-  struct Nan_LocalInteger result = { v8::Integer::New(isolate, x) };
-  return result;
+  *out = v8::Integer::New(isolate, x);
 }
 
-extern "C" Nan_LocalNumber Nan_NewNumber(double value) {
+extern "C" void Nan_NewNumber(v8::Local<v8::Number> *out, double value) {
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
-  struct Nan_LocalNumber result = { v8::Number::New(isolate, value) };
-  return result;
+  *out = v8::Number::New(isolate, value);
 }
 
-extern "C" Nan_LocalArray Nan_NewArray(uint32_t length) {
+extern "C" void Nan_NewArray(v8::Local<v8::Array> *out, uint32_t length) {
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
-  struct Nan_LocalArray result = { v8::Array::New(isolate, length) };
-  return result;
+  *out = v8::Array::New(isolate, length);
 }
 
-extern "C" bool Nan_ArraySet(Nan_LocalArray *array, uint32_t index, Nan_Local value) {
-  return array->value->Set(index, value.value);
+extern "C" bool Nan_ArraySet(v8::Local<v8::Array> *array, uint32_t index, v8::Local<v8::Value> value) {
+  return (*array)->Set(index, value);
 }
 
-extern "C" bool Nan_MaybeLocalString_IsEmpty(Nan_MaybeLocalString *maybe) {
-  return maybe->value.IsEmpty();
+extern "C" void Nan_HandleScope_Drop(Nan::HandleScope *scope) {
+  scope->~HandleScope();
 }
 
-extern "C" bool Nan_MaybeLocalString_ToLocal(Nan_MaybeLocalString *maybe, Nan_LocalString *out) {
-  return maybe->value.ToLocal(&out->value);
-}
-
-extern "C" void Nan_HandleScope_Drop(Nan_HandleScope *scope) {
-  scope->value.~HandleScope();
-}
-
-extern "C" void Nan_HandleScope_PlacementNew(Nan_HandleScope *scope) {
+extern "C" void Nan_HandleScope_PlacementNew(Nan::HandleScope *scope) {
   ::new (scope) Nan::HandleScope();
 }
 
-extern "C" void Nan_EscapableHandleScope_Drop(Nan_EscapableHandleScope *scope) {
-  scope->value.~EscapableHandleScope();
+extern "C" void Nan_EscapableHandleScope_Drop(Nan::EscapableHandleScope *scope) {
+  scope->~EscapableHandleScope();
 }
 
-extern "C" void Nan_EscapableHandleScope_PlacementNew(Nan_EscapableHandleScope *scope) {
+extern "C" void Nan_EscapableHandleScope_PlacementNew(Nan::EscapableHandleScope *scope) {
   ::new (scope) Nan::EscapableHandleScope();
 }
+
+extern "C" void Nan_Scoped(void *out, void *closure, Nan_ScopedCallback callback) {
+  Nan::HandleScope scope;
+  callback(out, &scope, closure);
+}
+
+/*
+extern "C" void Nan_NewString(Nan::MaybeLocal<v8::String> *out, const char *value) {
+  *out = Nan::New<v8::String>(value);
+}
+
+extern "C" void Nan_NewStringN(Nan::MaybeLocal<v8::String> *out, const char *value, int32_t length) {
+  *out = Nan::New<v8::String>(value, length);
+}
+
+extern "C" bool Nan_MaybeLocalString_IsEmpty(Nan::MaybeLocal<v8::String> *maybe) {
+  return maybe->IsEmpty();
+}
+
+extern "C" bool Nan_MaybeLocalString_ToLocal(Nan::MaybeLocal<v8::String> *maybe, Nan::Local<v8::String> *out) {
+  return maybe->ToLocal(out);
+}
+*/

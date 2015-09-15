@@ -33,11 +33,13 @@ pub struct LocalString {
     data: [u8; 8] // FIXME: this was calculated from sizes.cc; automate and autogenerate this
 }
 
+/*
 #[repr(C)]
 pub struct MaybeLocalString {
     #[allow(dead_code)]
     data: [u8; 8] // FIXME: this was calculated from sizes.cc; automate and autogenerate this
 }
+ */
 
 #[repr(C)]
 #[derive(Clone)]

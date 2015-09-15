@@ -1,11 +1,13 @@
 extern crate nanners_sys;
 
+use std::fmt::Debug;
 use std::mem;
+use std::os::raw::c_void;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Drop};
 use std::ffi::CStr;
 use nanners_sys::raw;
-use nanners_sys::{Nan_FunctionCallbackInfo_SetReturnValue, Nan_Export, Nan_NewObject, /*Nan_MaybeLocalString_ToOption, Nan_MaybeLocalString_IsEmpty,*/ Nan_HandleScope_Drop, Nan_HandleScope_PlacementNew, Nan_NewInteger, Nan_NewNumber, Nan_NewArray, Nan_ArraySet, Nan_EscapableHandleScope_Drop, Nan_EscapableHandleScope_PlacementNew};
+use nanners_sys::{Nan_FunctionCallbackInfo_SetReturnValue, Nan_Export, Nan_NewObject, /*Nan_MaybeLocalString_ToOption, Nan_MaybeLocalString_IsEmpty,*/ Nan_HandleScope_Drop, Nan_HandleScope_PlacementNew, Nan_Scoped, Nan_NewInteger, Nan_NewNumber, Nan_NewArray, Nan_ArraySet, Nan_EscapableHandleScope_Drop, Nan_EscapableHandleScope_PlacementNew};
 
 #[repr(C)]
 pub struct FunctionCallbackInfo(raw::FunctionCallbackInfo);
@@ -21,6 +23,24 @@ impl FunctionCallbackInfo {
 }
 
 pub trait Value { }
+
+pub trait Handler {
+    fn integer(&self, i: i32) -> Local<Integer> {
+        Integer::new(i)
+    }
+
+    fn number(&self, v: f64) -> Local<Number> {
+        Number::new(v)
+    }
+
+    fn array(&self, len: u32) -> Local<Array> {
+        Array::new(len)
+    }
+
+    fn object(&self) -> Local<Object> {
+        Object::new()
+    }
+}
 
 #[repr(C)]
 pub struct Local<'a, T: Clone + Value + 'a> {
@@ -60,10 +80,18 @@ impl Value for Integer { }
 
 impl Integer {
     fn new<'a>(i: i32) -> Local<'a, Integer> {
-        Local {
-            value: Integer(unsafe { Nan_NewInteger(i) }),
+        let mut result = Local {
+            value: Integer(unsafe { mem::uninitialized() }),
             phantom: PhantomData
+        };
+        match &mut result {
+            &mut Local { value: Integer(ref mut integer), .. } => {
+                unsafe {
+                    Nan_NewInteger(integer, i);
+                }
+            }
         }
+        result
     }
 }
 
@@ -75,10 +103,18 @@ impl Value for Number { }
 
 impl Number {
     fn new<'a>(v: f64) -> Local<'a, Number> {
-        Local {
-            value: Number(unsafe { Nan_NewNumber(v) }),
+        let mut result = Local {
+            value: Number(unsafe { mem::uninitialized() }),
             phantom: PhantomData
+        };
+        match &mut result {
+            &mut Local { value: Number(ref mut number), .. } => {
+                unsafe {
+                    Nan_NewNumber(number, v);
+                }
+            }
         }
+        result
     }
 }
 
@@ -90,10 +126,18 @@ impl Value for Object { }
 
 impl Object {
     fn new<'a>() -> Local<'a, Object> {
-        Local {
-            value: Object(unsafe { Nan_NewObject() }),
+        let mut result = Local {
+            value: Object(unsafe { mem::uninitialized() }),
             phantom: PhantomData
+        };
+        match &mut result {
+            &mut Local { value: Object(ref mut object), .. } => {
+                unsafe {
+                    Nan_NewObject(object);
+                }
+            }
         }
+        result
     }
 
     pub fn export(&mut self, name: &CStr, f: extern fn(&mut FunctionCallbackInfo)) {
@@ -112,10 +156,18 @@ impl Value for Array { }
 
 impl Array {
     fn new<'a>(len: u32) -> Local<'a, Array> {
-        Local {
-            value: Array(unsafe { Nan_NewArray(len) }),
+        let mut result = Local {
+            value: Array(unsafe { mem::uninitialized() }),
             phantom: PhantomData
+        };
+        match &mut result {
+            &mut Local { value: Array(ref mut array), .. } => {
+                unsafe {
+                    Nan_NewArray(array, len);
+                }
+            }
         }
+        result
     }
 
     pub fn set<'a, T: Clone + Value>(&mut self, index: u32, value: Local<'a, T>) -> bool {
@@ -129,12 +181,11 @@ impl Array {
     }
 }
 
-pub struct EscapeScope<'a> {
-    value: raw::EscapableHandleScope,
-    phantom: PhantomData<&'a ()>
+pub struct EscapeScope {
+    value: raw::EscapableHandleScope
 }
 
-impl<'a> Drop for EscapeScope<'a> {
+impl Drop for EscapeScope {
     fn drop(&mut self) {
         unsafe {
             Nan_EscapableHandleScope_Drop(&mut self.value);
@@ -142,11 +193,12 @@ impl<'a> Drop for EscapeScope<'a> {
     }
 }
 
-impl<'a> EscapeScope<'a> {
+impl Handler for EscapeScope { }
+
+impl EscapeScope {
     pub fn new() -> Self {
         let mut result = EscapeScope {
-            value: unsafe { raw::EscapableHandleScope::alloc() },
-            phantom: PhantomData
+            value: unsafe { raw::EscapableHandleScope::alloc() }
         };
         unsafe {
             Nan_EscapableHandleScope_PlacementNew(&mut result.value);
@@ -154,23 +206,7 @@ impl<'a> EscapeScope<'a> {
         result
     }
 
-    pub fn integer(&self, i: i32) -> Local<'a, Integer> {
-        Integer::new(i)
-    }
-
-    pub fn number(&self, v: f64) -> Local<'a, Number> {
-        Number::new(v)
-    }
-
-    pub fn array(&self, len: u32) -> Local<'a, Array> {
-        Array::new(len)
-    }
-
-    pub fn object(&self) -> Local<'a, Object> {
-        Object::new()
-    }
-
-    pub fn escape<'b, T: Clone + Value>(local: Local<'a, T>) -> Local<'b, T> {
+    pub fn escape<'a, 'b, T: Clone + Value>(&'a mut self, local: Local<'a, T>) -> Local<'b, T> {
         Local {
             value: local.value.clone(),
             phantom: PhantomData
@@ -178,12 +214,55 @@ impl<'a> EscapeScope<'a> {
     }
 }
 
-pub struct Scope<'a> {
-    value: raw::HandleScope,
-    phantom: PhantomData<&'a ()>
+pub struct Scope {
+    #[allow(dead_code)]
+    value: raw::HandleScope
 }
 
-impl<'a> Drop for Scope<'a> {
+impl Handler for Scope { }
+
+impl Scope {
+    pub fn run<T: Debug, F: FnOnce(&Scope) -> T>(f: F) -> T {
+        unsafe {
+            let closure: Box<F> = Box::new(f);
+            let callback: extern "C" fn(&mut Box<Option<T>>, &Scope, Box<F>) = scope_run_helper::<T, F>;
+            let closure: *mut c_void = mem::transmute(closure);
+            let callback: extern "C" fn(*mut c_void, &mut raw::HandleScope, *mut c_void) = mem::transmute(callback);
+            // I tried avoiding the option-wrapping with mem::uninitialized, but Box::new(mem::uninitialized)
+            // seems to cause some sort of crash, presumably because it has to copy uninitialized memory.
+            let mut result: Box<Option<T>> = Box::new(None);
+            {
+                let out: &mut Box<Option<T>> = &mut result;
+                let out: *mut c_void = mem::transmute(out);
+                Nan_Scoped(out, closure, callback);
+            }
+            result.unwrap()
+        }
+    }
+}
+
+pub struct RAIIScope {
+    value: raw::HandleScope
+}
+
+impl Handler for RAIIScope { }
+
+impl RAIIScope {
+    // Note that this does the placement new on the callee stack frame and then
+    // copies the result out to the caller stack frame. This relies on the fact
+    // that the constructor is not making use of the `this` pointer.
+    pub fn new() -> Self {
+        let mut result = RAIIScope {
+            value: unsafe { raw::HandleScope::alloc() }
+        };
+        unsafe {
+            Nan_HandleScope_PlacementNew(&mut result.value);
+        }
+        result
+    }
+}
+
+impl Drop for RAIIScope {
     fn drop(&mut self) {
         unsafe {
             Nan_HandleScope_Drop(&mut self.value);
@@ -191,36 +270,9 @@ impl<'a> Drop for Scope<'a> {
     }
 }
 
-impl<'a> Scope<'a> {
-    // Note that this does the placement new on the callee stack frame and then
-    // copies the result out to the caller stack frame. This relies on the fact
-    // that the constructor is not making use of the `this` pointer.
-    pub fn new() -> Self {
-        let mut result = Scope {
-            value: unsafe { raw::HandleScope::alloc() },
-            phantom: PhantomData
-        };
-        unsafe {
-            Nan_HandleScope_PlacementNew(&mut result.value);
-        }
-        result
-    }
-
-    pub fn integer(&self, i: i32) -> Local<'a, Integer> {
-        Integer::new(i)
-    }
-
-    pub fn number(&self, v: f64) -> Local<'a, Number> {
-        Number::new(v)
-    }
-
-    pub fn object(&self) -> Local<'a, Object> {
-        Object::new()
-    }
-
-    pub fn array(&self, len: u32) -> Local<'a, Array> {
-        Array::new(len)
-    }
+extern "C" fn scope_run_helper<T: Debug, F: FnOnce(&Scope) -> T>(out: &mut Box<Option<T>>, scope: &Scope, f: Box<F>) {
+    let result = f(scope);
+    **out = Some(result);
 }
 
 /*
