@@ -1,20 +1,20 @@
 pub mod raw;
 
 use std::os::raw::c_void;
-use raw::{FunctionCallbackInfo, LocalObject, /*LocalString,*/ LocalInteger, LocalNumber, LocalArray, LocalValue, /*MaybeLocalString,*/ HandleScope, EscapableHandleScope};
+use raw::{FunctionCallbackInfo, Local, HandleScope, EscapableHandleScope};
 
 extern "system" {
-    pub fn Nan_FunctionCallbackInfo_SetReturnValue(info: &mut FunctionCallbackInfo, value: LocalValue);
-    pub fn Nan_Export(target: &mut LocalObject, name: *const u8, f: extern fn(&mut FunctionCallbackInfo));
-    pub fn Nan_NewObject(out: &mut LocalObject);
+    pub fn Nan_FunctionCallbackInfo_SetReturnValue(info: &mut FunctionCallbackInfo, value: Local);
+    pub fn Nan_Export(target: &mut Local, name: *const u8, f: extern fn(&mut FunctionCallbackInfo));
+    pub fn Nan_NewObject(out: &mut Local);
     /*
     pub fn Nan_NewString(value: *const u8) -> MaybeLocalString;
     pub fn Nan_NewStringN(value: *const u8, length: i32) -> MaybeLocalString;
      */
-    pub fn Nan_NewInteger(out: &mut LocalInteger, x: i32);
-    pub fn Nan_NewNumber(out: &mut LocalNumber, v: f64);
-    pub fn Nan_NewArray(out: &mut LocalArray, length: u32);
-    pub fn Nan_ArraySet(array: &mut LocalArray, index: u32, value: LocalValue) -> bool;
+    pub fn Nan_NewInteger(out: &mut Local, x: i32);
+    pub fn Nan_NewNumber(out: &mut Local, v: f64);
+    pub fn Nan_NewArray(out: &mut Local, length: u32);
+    pub fn Nan_ArraySet(array: &mut Local, index: u32, value: Local) -> bool;
 
     /*
     pub fn Nan_MaybeLocalString_ToOption(maybe: &MaybeLocalString, out: &mut LocalString) -> bool;

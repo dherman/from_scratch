@@ -10,7 +10,8 @@ $(dylib): $(staticlib)
 	npm run build
 	gcc -dynamiclib -Wl,-undefined,dynamic_lookup -Wl,-force_load,$(staticlib) -o $(dylib)
 
-# We have to use nightly until the patch lands that stops the dylib
-# from clobbering jemalloc symbols in the node executable.
+# We have to use nightly until https://github.com/rust-lang/rust/pull/27400 makes it
+# through the trains to stable. That patch fixes the problem where jemalloc symbols
+# in the node executable get clobbered by the dylib.
 $(staticlib): $(rustsrc) $(csrc)
 	multirust run nightly cargo build --release

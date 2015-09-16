@@ -17,12 +17,14 @@ impl FunctionCallbackInfo {
     pub fn set_return<'a, 'b, T: Clone + Value>(&'a mut self, value: Local<'b, T>) {
         let &mut FunctionCallbackInfo(ref mut info) = self;
         unsafe {
-            Nan_FunctionCallbackInfo_SetReturnValue(info, value.to_local_value());
+            Nan_FunctionCallbackInfo_SetReturnValue(info, value.to_raw());
         }
     }
 }
 
-pub trait Value { }
+pub trait Value {
+    fn to_raw(&self) -> raw::Local;
+}
 
 pub trait Handler {
     fn integer(&self, i: i32) -> Local<Integer> {
@@ -61,22 +63,26 @@ impl<'a, T: Clone + Value> DerefMut for Local<'a, T> {
     }
 }
 
-impl<'a, T: Clone + Value> Local<'a, T> {
-    unsafe fn to_local_value(&self) -> raw::LocalValue {
-        raw::LocalValue::from_data(mem::transmute(&self.value))
+#[repr(C)]
+pub struct String(raw::Local);
+
+impl Value for String {
+    fn to_raw(&self) -> raw::Local {
+        let &String(ref local) = self;
+        local.clone()
     }
 }
 
 #[repr(C)]
-pub struct String(raw::LocalString);
-
-impl Value for String { }
-
-#[repr(C)]
 #[derive(Clone)]
-pub struct Integer(raw::LocalInteger);
+pub struct Integer(raw::Local);
 
-impl Value for Integer { }
+impl Value for Integer {
+    fn to_raw(&self) -> raw::Local {
+        let &Integer(ref local) = self;
+        local.clone()
+    }
+}
 
 impl Integer {
     fn new<'a>(i: i32) -> Local<'a, Integer> {
@@ -97,9 +103,14 @@ impl Integer {
 
 #[repr(C)]
 #[derive(Clone)]
-pub struct Number(raw::LocalNumber);
+pub struct Number(raw::Local);
 
-impl Value for Number { }
+impl Value for Number {
+    fn to_raw(&self) -> raw::Local {
+        let &Number(ref local) = self;
+        local.clone()
+    }
+}
 
 impl Number {
     fn new<'a>(v: f64) -> Local<'a, Number> {
@@ -120,9 +131,14 @@ impl Number {
 
 #[repr(C)]
 #[derive(Clone)]
-pub struct Object(raw::LocalObject);
+pub struct Object(raw::Local);
 
-impl Value for Object { }
+impl Value for Object {
+    fn to_raw(&self) -> raw::Local {
+        let &Object(ref local) = self;
+        local.clone()
+    }
+}
 
 impl Object {
     fn new<'a>() -> Local<'a, Object> {
@@ -150,9 +166,14 @@ impl Object {
 
 #[repr(C)]
 #[derive(Clone)]
-pub struct Array(raw::LocalArray);
+pub struct Array(raw::Local);
 
-impl Value for Array { }
+impl Value for Array {
+    fn to_raw(&self) -> raw::Local {
+        let &Array(ref local) = self;
+        local.clone()
+    }
+}
 
 impl Array {
     fn new<'a>(len: u32) -> Local<'a, Array> {
@@ -174,7 +195,7 @@ impl Array {
         match self {
             &mut Array(ref mut array) => {
                 unsafe {
-                    Nan_ArraySet(array, index, value.to_local_value())
+                    Nan_ArraySet(array, index, value.to_raw())
                 }
             }
         }
@@ -214,10 +235,7 @@ impl EscapeScope {
     }
 }
 
-pub struct Scope {
-    #[allow(dead_code)]
-    value: raw::HandleScope
-}
+pub struct Scope;
 
 impl Handler for Scope { }
 
