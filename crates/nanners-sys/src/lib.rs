@@ -1,7 +1,7 @@
 pub mod raw;
 
 use std::os::raw::c_void;
-use raw::{FunctionCallbackInfo, Local, HandleScope, EscapableHandleScope};
+use raw::{FunctionCallbackInfo, Local};
 
 extern "system" {
     pub fn Nan_FunctionCallbackInfo_SetReturnValue(info: &mut FunctionCallbackInfo, value: Local);
@@ -21,13 +21,9 @@ extern "system" {
     pub fn Nan_MaybeLocalString_IsEmpty(maybe: &MaybeLocalString) -> bool;
      */
 
-    pub fn Nan_HandleScope_Drop(scope: &mut HandleScope);
-    pub fn Nan_HandleScope_PlacementNew(scope: &mut HandleScope);
-    pub fn Nan_EscapableHandleScope_Drop(scope: &mut EscapableHandleScope);
-    pub fn Nan_EscapableHandleScope_PlacementNew(scope: &mut EscapableHandleScope);
-
     //pub fn Nan_MaybeLocalString_ToLocal(maybe: &MaybeLocalString, out: &mut LocalString) -> bool;
     //pub fn Nan_MaybeLocalString_ToLocal(maybe: &mut MaybeLocalString, &mut ) -> LocalString;
 
-    pub fn Nan_Scoped(out: *mut c_void, closure: *mut c_void, callback: extern fn(*mut c_void, &mut HandleScope, *mut c_void));
+    pub fn Nan_Scoped(out: *mut c_void, closure: *mut c_void, callback: extern fn(*mut c_void, *mut c_void, *mut c_void));
+    pub fn Nan_EscapeScoped(out: *mut c_void, closure: *mut c_void, callback: extern fn(*mut c_void, *mut c_void, *mut c_void));
 }

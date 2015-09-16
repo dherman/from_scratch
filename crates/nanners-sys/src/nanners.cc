@@ -39,24 +39,13 @@ extern "C" bool Nan_ArraySet(v8::Local<v8::Array> *array, uint32_t index, v8::Lo
   return (*array)->Set(index, value);
 }
 
-extern "C" void Nan_HandleScope_Drop(Nan::HandleScope *scope) {
-  scope->~HandleScope();
-}
-
-extern "C" void Nan_HandleScope_PlacementNew(Nan::HandleScope *scope) {
-  ::new (scope) Nan::HandleScope();
-}
-
-extern "C" void Nan_EscapableHandleScope_Drop(Nan::EscapableHandleScope *scope) {
-  scope->~EscapableHandleScope();
-}
-
-extern "C" void Nan_EscapableHandleScope_PlacementNew(Nan::EscapableHandleScope *scope) {
-  ::new (scope) Nan::EscapableHandleScope();
-}
-
 extern "C" void Nan_Scoped(void *out, void *closure, Nan_ScopedCallback callback) {
   Nan::HandleScope scope;
+  callback(out, &scope, closure);
+}
+
+extern "C" void Nan_EscapeScoped(void *out, void *closure, Nan_EscapeScopedCallback callback) {
+  Nan::EscapableHandleScope scope;
   callback(out, &scope, closure);
 }
 

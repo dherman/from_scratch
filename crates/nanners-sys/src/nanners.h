@@ -18,14 +18,11 @@ extern "C" {
 
   bool Nan_ArraySet(v8::Local<v8::Array> *array, uint32_t index, v8::Local<v8::Value> value);
 
-  void Nan_HandleScope_Drop(Nan::HandleScope *scope);
-  void Nan_HandleScope_PlacementNew(Nan::HandleScope *scope);
-  void Nan_EscapableHandleScope_Drop(Nan::EscapableHandleScope *scope);
-  void Nan_EscapableHandleScope_PlacementNew(Nan::EscapableHandleScope *scope);
-
   typedef void(*Nan_ScopedCallback)(void*, Nan::HandleScope*, void*);
+  typedef void(*Nan_EscapeScopedCallback)(void*, Nan::EscapableHandleScope*, void*);
 
   void Nan_Scoped(void *out, void *closure, Nan_ScopedCallback callback);
+  void Nan_EscapeScoped(void *out, void *closure, Nan_EscapeScopedCallback callback);
 
   void Nan_UpcastArray(v8::Local<v8::Value> *out, v8::Local<v8::Array> *array);
 

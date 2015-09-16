@@ -14,24 +14,6 @@ pub extern fn make_a_pi(info: &mut FunctionCallbackInfo) {
 
 #[no_mangle]
 pub extern fn make_an_array(info: &mut FunctionCallbackInfo) {
-    let scope = RAIIScope::new();
-    let mut array = scope.array(3);
-    array.set(0, scope.integer(17));
-    array.set(1, scope.integer(42));
-    array.set(2, scope.integer(1999));
-    info.set_return(array);
-}
-
-/*
-// This produces a lifetime error as expected:
-fn naughty<'a>() -> Local<'a, Integer> {
-    let scope = Scope::new();
-    scope.integer(17)
-}
-*/
-
-#[no_mangle]
-pub extern fn make_an_array2(info: &mut FunctionCallbackInfo) {
     let result = Scope::run(|scope| {
         let mut array = scope.array(3);
         array.set(0, scope.integer(17));
@@ -44,7 +26,7 @@ pub extern fn make_an_array2(info: &mut FunctionCallbackInfo) {
 
 /*
 // This produces a lifetime error as expected:
-fn naughty2<'a>() -> Local<'a, Integer> {
+fn naughty<'a>() -> Local<'a, Integer> {
     Scope::run(|scope| {
         scope.integer(17)
     })
@@ -55,5 +37,4 @@ fn naughty2<'a>() -> Local<'a, Integer> {
 pub extern fn init_module<'a>(mut target: Local<'a, Object>) {
     target.export(&CString::new("make_a_pi").unwrap(), make_a_pi);
     target.export(&CString::new("make_an_array").unwrap(), make_an_array);
-    target.export(&CString::new("make_an_array2").unwrap(), make_an_array2);
 }

@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Drop};
 use std::ffi::CStr;
 use nanners_sys::raw;
-use nanners_sys::{Nan_FunctionCallbackInfo_SetReturnValue, Nan_Export, Nan_NewObject, /*Nan_MaybeLocalString_ToOption, Nan_MaybeLocalString_IsEmpty,*/ Nan_HandleScope_Drop, Nan_HandleScope_PlacementNew, Nan_Scoped, Nan_NewInteger, Nan_NewNumber, Nan_NewArray, Nan_ArraySet, Nan_EscapableHandleScope_Drop, Nan_EscapableHandleScope_PlacementNew};
+use nanners_sys::{Nan_FunctionCallbackInfo_SetReturnValue, Nan_Export, Nan_NewObject, /*Nan_MaybeLocalString_ToOption, Nan_MaybeLocalString_IsEmpty,*/ Nan_Scoped, Nan_EscapeScoped, Nan_NewInteger, Nan_NewNumber, Nan_NewArray, Nan_ArraySet};
 
 #[repr(C)]
 pub struct FunctionCallbackInfo(raw::FunctionCallbackInfo);
@@ -202,29 +202,28 @@ impl Array {
     }
 }
 
-pub struct EscapeScope {
-    value: raw::EscapableHandleScope
-}
-
-impl Drop for EscapeScope {
-    fn drop(&mut self) {
-        unsafe {
-            Nan_EscapableHandleScope_Drop(&mut self.value);
-        }
-    }
-}
+pub struct EscapeScope;
 
 impl Handler for EscapeScope { }
 
 impl EscapeScope {
-    pub fn new() -> Self {
-        let mut result = EscapeScope {
-            value: unsafe { raw::EscapableHandleScope::alloc() }
-        };
+    pub fn run<T: Debug, F: FnOnce(&EscapeScope) -> T>(f: F) -> T {
+        // FIXME: too much copy-paste with Scope -- how much can be abstracted?
         unsafe {
-            Nan_EscapableHandleScope_PlacementNew(&mut result.value);
+            let closure: Box<F> = Box::new(f);
+            let callback: extern "C" fn(&mut Box<Option<T>>, &EscapeScope, Box<F>) = escape_scope_run_helper::<T, F>;
+            let closure: *mut c_void = mem::transmute(closure);
+            let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
+            // I tried avoiding the option-wrapping with mem::uninitialized, but Box::new(mem::uninitialized)
+            // seems to cause some sort of crash, presumably because it has to copy uninitialized memory.
+            let mut result: Box<Option<T>> = Box::new(None);
+            {
+                let out: &mut Box<Option<T>> = &mut result;
+                let out: *mut c_void = mem::transmute(out);
+                Nan_EscapeScoped(out, closure, callback);
+            }
+            result.unwrap()
         }
-        result
     }
 
     pub fn escape<'a, 'b, T: Clone + Value>(&'a mut self, local: Local<'a, T>) -> Local<'b, T> {
@@ -245,7 +244,7 @@ impl Scope {
             let closure: Box<F> = Box::new(f);
             let callback: extern "C" fn(&mut Box<Option<T>>, &Scope, Box<F>) = scope_run_helper::<T, F>;
             let closure: *mut c_void = mem::transmute(closure);
-            let callback: extern "C" fn(*mut c_void, &mut raw::HandleScope, *mut c_void) = mem::transmute(callback);
+            let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
             // I tried avoiding the option-wrapping with mem::uninitialized, but Box::new(mem::uninitialized)
             // seems to cause some sort of crash, presumably because it has to copy uninitialized memory.
             let mut result: Box<Option<T>> = Box::new(None);
@@ -259,36 +258,12 @@ impl Scope {
     }
 }
 
-pub struct RAIIScope {
-    value: raw::HandleScope
-}
-
-impl Handler for RAIIScope { }
-
-impl RAIIScope {
-    // Note that this does the placement new on the callee stack frame and then
-    // copies the result out to the caller stack frame. This relies on the fact
-    // that the constructor is not making use of the `this` pointer.
-    pub fn new() -> Self {
-        let mut result = RAIIScope {
-            value: unsafe { raw::HandleScope::alloc() }
-        };
-        unsafe {
-            Nan_HandleScope_PlacementNew(&mut result.value);
-        }
-        result
-    }
-}
-
-impl Drop for RAIIScope {
-    fn drop(&mut self) {
-        unsafe {
-            Nan_HandleScope_Drop(&mut self.value);
-        }
-    }
-}
-
 extern "C" fn scope_run_helper<T: Debug, F: FnOnce(&Scope) -> T>(out: &mut Box<Option<T>>, scope: &Scope, f: Box<F>) {
+    let result = f(scope);
+    **out = Some(result);
+}
+
+extern "C" fn escape_scope_run_helper<T: Debug, F: FnOnce(&EscapeScope) -> T>(out: &mut Box<Option<T>>, scope: &EscapeScope, f: Box<F>) {
     let result = f(scope);
     **out = Some(result);
 }
